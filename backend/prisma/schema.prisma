@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id        Int       @id @default(autoincrement())
+  name      String
+  age       Int
+  gender    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  ECGs      ECGData[] // Link to ECG data for each patient
+}
+
+model ECGData {
+  id          Int           @id @default(autoincrement())
+  timestamp   DateTime      @default(now())
+  ecgSignal   Float[] // Store ECG signal values (array of numbers)
+  heartRate   Int // Heart rate in beats per minute
+  patientId   Int // Foreign key to Patient
+  abnormal    Boolean       @default(false) // Indicates if the ECG data is abnormal
+  patient     Patient       @relation(fields: [patientId], references: [id]) // Relation to Patient
+  AbnormalECG AbnormalECG[]
+  Doctor      Doctor?       @relation(fields: [doctorId], references: [id])
+  doctorId    Int?
+}
+
+model AbnormalECG {
+  id            Int      @id @default(autoincrement())
+  ecgDataId     Int // Foreign key to ECG data
+  detectionTime DateTime @default(now()) // Time when abnormality was detected
+  message       String // Alert message for medical personnel
+  ecgData       ECGData  @relation(fields: [ecgDataId], references: [id]) // Relation to ECG data
+}
+
+model Doctor {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String // Store hashed password
+  role      String // Define role (admin, cardiologist, etc.)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  ECGs      ECGData[] // Doctors have access to ECG data for analysis
+}
